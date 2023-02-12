@@ -6,14 +6,50 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>395</width>
-    <height>301</height>
+    <width>1448</width>
+    <height>826</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Form</string>
   </property>
+  <widget class="QLabel" name="label">
+   <property name="geometry">
+    <rect>
+     <x>80</x>
+     <y>30</y>
+     <width>1280</width>
+     <height>720</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">border-image: url(:/image/mainimg.png);
+border-radius:30px;</string>
+   </property>
+   <property name="text">
+    <string>TextLabel</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_2">
+   <property name="geometry">
+    <rect>
+     <x>80</x>
+     <y>30</y>
+     <width>1281</width>
+     <height>721</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">background-color:rgba(0,0,0,140);
+border-radius:30px</string>
+   </property>
+   <property name="text">
+    <string>TextLabel</string>
+   </property>
+  </widget>
  </widget>
- <resources/>
+ <resources>
+  <include location="menu.qrc"/>
+ </resources>
  <connections/>
 </ui>
