@@ -1,17 +1,27 @@
+import cgi
 import sqlite3
 import sys
 import webbrowser
 import re
+import os
+
+import requests
+import wget
+import subprocess
 import login
 import menu
-from PyQt6.QtWidgets import QDialog
-from PyQt6 import QtWidgets, QtCore
+import DownloadSoft
+from PyQt6.QtWidgets import QDialog, QGraphicsColorizeEffect
+from PyQt6 import QtWidgets, QtCore, QtGui
 from ui_login import Ui_ImageDialog
 from ui_AboutTheProgram import Ui_AboutTheProgram
+from ui_Download import Ui_Download
 from ui_reg import Ui_Reg
 
-from PyQt6.QtCore import Qt, QPoint
 
+
+from PyQt6.QtCore import Qt, QPoint, QPropertyAnimation
+from Class.download import *
 
 
 
@@ -24,6 +34,8 @@ class MainWindows(QDialog, Ui_ImageDialog):
         super().__init__()
         self.MainMenu = Ui_ImageDialog
         self.setupUi(self)
+        self.setWindowTitle('ZoomApp')
+        self.setWindowIcon(QtGui.QIcon('image/icon/free-icon-letter-z-8061473 (1).png'))
 
         # Кнопки
         self.pushClose.clicked.connect(self.CloseWindow)  # При нажатии на кнопку login перейти на новую страницу
@@ -85,12 +97,42 @@ class MainWindows(QDialog, Ui_ImageDialog):
 class AboutTheProgram(QDialog, Ui_AboutTheProgram):
     def __init__(self):
         super().__init__()
+        self.logo_text = None
         self.abouttheprogram = Ui_AboutTheProgram
         self.setupUi(self)
         self.importmainclass = MainWindows
-        self.pushClose.clicked.connect(self.importmainclass.CloseWindow)
+        self.importregclass= Refistration
+
         #Импорт основных методов передвижение окна windows и убарать windows элименты из виджета
         self.importmainclass.RemoveWindowsMenu(self)
+        self.pushClose.clicked.connect(self.importmainclass.CloseWindow)#кнопка завершение программы
+        self.pushCollapse.clicked.connect(self.showMinimized)#Сворачивание окна
+        self.pushExit.clicked.connect(self.PushBack)#кнопка для выхода с аккаунта
+        self.pushDownload.clicked.connect(self.download)
+
+    def download(self):
+        self.ui = Download()
+        self.ui.show()
+        self.hide()
+
+
+
+
+    def mousePressEvent(self, event):
+        self.oldPos = event.globalPosition()
+
+    def mouseMoveEvent(self, event):
+        delta = event.globalPosition() - self.oldPos
+        self.move(int(self.x() + delta.x()), int(self.y() + delta.y()))
+        self.oldPos = event.globalPosition()
+
+    def PushBack(self):
+        self.ui = MainWindows()
+        self.ui.show()
+        self.hide()
+
+
+
 
 class Refistration(QDialog, Ui_Reg):
     def __init__(self):
@@ -104,6 +146,7 @@ class Refistration(QDialog, Ui_Reg):
         self.status = self.label_2
         self.status.setStyleSheet('font-size:10px; color: red;text-align: center;')
         self.pushBack.clicked.connect(self.PushBack)
+
 
     def PushBack(self):
         self.ui = MainWindows()
@@ -128,7 +171,7 @@ class Refistration(QDialog, Ui_Reg):
         confirmpassword = self.ConfirmPassword.text()
 
         #Проверка пароля
-        regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b'
+        regex = re.compile(r'([A-Za-z0-9]+[.-_])*[A-Za-z0-9]+@[A-Za-z0-9-]+(\.[A-Z|a-z]{2,})+')#проверка email
         count_digit = 0
         count_upper = 0
         count_spec=0
@@ -140,46 +183,48 @@ class Refistration(QDialog, Ui_Reg):
                 count_upper+=1
             if s in spec_simvol:
                 count_spec+=1
-        if count_digit >= 3 and count_upper > 0 and count_spec > 0 and 6 <= len(password) <= 20 and len(firstname) > 0:
-            coursor.execute('INSERT INTO  users VALUES(?,?,?,?,?,?);',(firstname, lastname, email, password, confirmpassword,None))
-            self.abouttheprogram = AboutTheProgram()
-            self.abouttheprogram.show()
-            self.hide()
-            db.commit()
-            db.close()
 
-        else:
-            if password != confirmpassword:
-                self.status.setText('Пароли не верны')
+        coursor.execute(f'SELECT * FROM users WHERE firstname like \"{firstname}\" and email like \"{email}\";')
+        result_pass = coursor.fetchone()
+
+
+        if not result_pass:
+            if count_digit >= 3 and count_upper > 0 and count_spec > 0 and 6 <= len(password) <= 20 and len(
+                    firstname) > 0 and re.fullmatch(regex, email):
+                coursor.execute('INSERT INTO  users VALUES(?,?,?,?,?,?);',
+                                (firstname, lastname, email, password, confirmpassword, None))
+                self.abouttheprogram = AboutTheProgram()
+                self.abouttheprogram.show()
+                self.hide()
+                db.commit()
+                db.close()
+
             else:
-                if len(password) < 4:
-                    self.status.setText('Пароль слишком короткий')
+                if password != confirmpassword:
+                    self.status.setText('Пароли не верны')
                 else:
-                    if len(password) > 20:
-                        self.status.setText('Пароль слишком длинный')
+                    if len(password) < 4:
+                        self.status.setText('Пароль слишком короткий')
                     else:
-                        if count_spec == 0:
-                            self.status.setText('Нет специальных символов')
+                        if len(password) > 20:
+                            self.status.setText('Пароль слишком длинный')
                         else:
-                            if count_upper == 0:
-                                self.status.setText('Нет заглавных букв')
+                            if count_spec == 0:
+                                self.status.setText('Нет специальных символов')
                             else:
-                                if count_digit < 3:
-                                    self.status.setText('Нет строчных букв')
+                                if count_upper == 0:
+                                    self.status.setText('Нет заглавных букв')
                                 else:
-                                    if len(firstname) < 5:
-                                        self.status.setText('Ник нейм короткий')
+                                    if count_digit < 3:
+                                        self.status.setText('Нет строчных букв')
                                     else:
-                                        pass
-
-
-
-
-
-        
-
-
-
+                                        if len(firstname) < 5:
+                                            self.status.setText('Ник нейм короткий')
+                                        else:
+                                            if not re.fullmatch(regex, email):
+                                                self.status.setText('Email указан не верно')
+                                            else:
+                                                self.status.setText('Аккаунт с данными уже был зарегистрирован')
 
 
 
