@@ -11,6 +11,7 @@ import subprocess
 import login
 import menu
 import DownloadSoft
+from Class.download import *
 from PyQt6.QtWidgets import QDialog, QGraphicsColorizeEffect
 from PyQt6 import QtWidgets, QtCore, QtGui
 from ui_login import Ui_ImageDialog
@@ -20,8 +21,10 @@ from ui_reg import Ui_Reg
 
 
 
-from PyQt6.QtCore import Qt, QPoint, QPropertyAnimation
+from PyQt6.QtCore import Qt, QPoint
 from Class.download import *
+
+
 
 
 
@@ -32,6 +35,8 @@ class MainWindows(QDialog, Ui_ImageDialog):
 
     def __init__(self):
         super().__init__()
+        self.reg = None
+        self.abouttheprogram = None
         self.MainMenu = Ui_ImageDialog
         self.setupUi(self)
         self.setWindowTitle('ZoomApp')
@@ -68,7 +73,8 @@ class MainWindows(QDialog, Ui_ImageDialog):
             else:
                 self.TransitionAboutTheProgram()
 
-    def CloseWindow(self):
+    @staticmethod
+    def CloseWindow():
         sys.exit()
 
     def mousePressEvent(self, event):
@@ -94,21 +100,25 @@ class MainWindows(QDialog, Ui_ImageDialog):
         self.setAttribute(QtCore.Qt.WidgetAttribute.WA_TranslucentBackground, True)
 
 
+
 class AboutTheProgram(QDialog, Ui_AboutTheProgram):
     def __init__(self):
         super().__init__()
+        self.oldPos = None
+        self.ui = None
         self.logo_text = None
         self.abouttheprogram = Ui_AboutTheProgram
         self.setupUi(self)
         self.importmainclass = MainWindows
-        self.importregclass= Refistration
+        self.importregclass = Refistration
 
-        #Импорт основных методов передвижение окна windows и убарать windows элименты из виджета
+        #Импорт основных методов передвижение окна windows и убарать windows элементы из виджета.
         self.importmainclass.RemoveWindowsMenu(self)
         self.pushClose.clicked.connect(self.importmainclass.CloseWindow)#кнопка завершение программы
         self.pushCollapse.clicked.connect(self.showMinimized)#Сворачивание окна
         self.pushExit.clicked.connect(self.PushBack)#кнопка для выхода с аккаунта
         self.pushDownload.clicked.connect(self.download)
+
 
     def download(self):
         self.ui = Download()
@@ -130,6 +140,7 @@ class AboutTheProgram(QDialog, Ui_AboutTheProgram):
         self.ui = MainWindows()
         self.ui.show()
         self.hide()
+from pyuac import main_requires_admin
 
 
 
@@ -137,6 +148,8 @@ class AboutTheProgram(QDialog, Ui_AboutTheProgram):
 class Refistration(QDialog, Ui_Reg):
     def __init__(self):
         super().__init__()
+        self.abouttheprogram = None
+        self.oldPos = None
         self.ui = Ui_Reg
         self.setupUi(self)
         self.importmainclass = MainWindows
@@ -174,15 +187,15 @@ class Refistration(QDialog, Ui_Reg):
         regex = re.compile(r'([A-Za-z0-9]+[.-_])*[A-Za-z0-9]+@[A-Za-z0-9-]+(\.[A-Z|a-z]{2,})+')#проверка email
         count_digit = 0
         count_upper = 0
-        count_spec=0
+        count_spec = 0
         spec_simvol = '!@#$%&'
         for s in password:
             if s.isdigit():
                 count_digit += 1
             if s.isupper():
-                count_upper+=1
+                count_upper += 1
             if s in spec_simvol:
-                count_spec+=1
+                count_spec += 1
 
         coursor.execute(f'SELECT * FROM users WHERE firstname like \"{firstname}\" and email like \"{email}\";')
         result_pass = coursor.fetchone()
